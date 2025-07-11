@@ -33,6 +33,8 @@ static_resources:
             max_concurrent_streams: 100
             initial_stream_window_size: 65536
             initial_connection_window_size: 1048576
+            allow_connect: true
+            allow_metadata: true
           access_log:
           - name: envoy.access_loggers.file
             typed_config:
@@ -60,16 +62,22 @@ static_resources:
                     retry_on: "5xx,reset,connect-failure,refused-stream"
                     num_retries: 3
           http_filters:
-          # Add gRPC to HTTP/1.1 bridge filter for protocol conversion
-          - name: envoy.filters.http.grpc_http1_bridge
+          # Add gRPC to HTTP/1.1 reverse bridge filter for protocol conversion to WAF
+          - name: envoy.filters.http.grpc_http1_reverse_bridge
             typed_config:
-              "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_http1_bridge.v3.Config
+              "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_http1_reverse_bridge.v3.FilterConfig
+              content_type: application/grpc+proto
+              withhold_grpc_frames: false
           # Add gRPC-specific filters for better handling
           - name: envoy.filters.http.grpc_stats
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_stats.v3.FilterConfig
               emit_filter_state: true
               stats_for_all_methods: true
+          # Add CORS filter for gRPC-Web support
+          - name: envoy.filters.http.cors
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
           - name: envoy.filters.http.router
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -94,23 +102,18 @@ static_resources:
     lb_policy: ROUND_ROBIN
     upstream_connection_options:
       tcp_keepalive: {}
-    # Disable health checks for now since WAF doesn't have dedicated health endpoint
-    # health_checks:
-    # - timeout: 5s
-    #   interval: 10s
-    #   unhealthy_threshold: 3
-    #   healthy_threshold: 2
-    #   tcp_health_check: {}
-    # Explicitly disable HTTP/2 for upstream connections to HTTP/1.1-only WAF
+    # Configure for gRPC-Web over HTTP/1.1 to upstream WAF
     typed_extension_protocol_options:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicit_http_config:
-          http_protocol_options: {}  # Force HTTP/1.1
-        # Ensure gRPC content is properly handled in HTTP/1.1
+          http_protocol_options:
+            allow_absolute_url: false
+        # Ensure gRPC-Web content is properly handled in HTTP/1.1
         common_http_protocol_options:
           idle_timeout: 60s
           max_connection_duration: 300s
+          headers_with_underscores_action: ALLOW
     load_assignment:
       cluster_name: waf_service
       endpoints:

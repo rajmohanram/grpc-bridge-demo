@@ -61,12 +61,11 @@ static_resources:
                       base_interval: 0.1s
                       max_interval: 10s
           http_filters:
-          # Add HTTP/1.1 to gRPC reverse bridge filter for protocol conversion
-          - name: envoy.filters.http.grpc_http1_reverse_bridge
+          # Add gRPC to HTTP/1.1 bridge filter for protocol conversion
+          - name: envoy.filters.http.grpc_http1_bridge
             typed_config:
-              "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_http1_reverse_bridge.v3.FilterConfig
-              content_type: application/grpc+proto
-              withhold_grpc_frames: false
+              "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_http1_bridge.v3.Config
+              upgrade_protobuf_to_grpc: true
           # gRPC-specific filters for server-to-server communication
           - name: envoy.filters.http.grpc_stats
             typed_config:
