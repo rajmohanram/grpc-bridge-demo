@@ -30,10 +30,7 @@ services:
       - ENVOY_UID=0
       - ENVOY_GID=0
     command: >
-      /usr/local/bin/envoy -c /etc/envoy/envoy.yaml
-      --service-cluster server-side-proxy
-      --service-node server-side-proxy-1
-      -l info
+      /usr/local/bin/envoy -c /etc/envoy/envoy.yaml -l info
     networks:
       - dockernet
 
@@ -69,10 +66,7 @@ services:
       - ENVOY_UID=0
       - ENVOY_GID=0
     command: >
-      /usr/local/bin/envoy -c /etc/envoy/envoy.yaml
-      --service-cluster client-side-proxy
-      --service-node client-side-proxy-1
-      -l info
+      /usr/local/bin/envoy -c /etc/envoy/envoy.yaml -l info
     networks:
       - dockernet
 
