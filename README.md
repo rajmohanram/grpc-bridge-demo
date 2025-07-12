@@ -72,27 +72,27 @@ This architecture implements a **bidirectional gRPC-HTTP/1.1 bridge** using Envo
 ```mermaid
 graph TB
     subgraph "Client Environment"
-        A[gRPC Client<br/>HTTP/2 + gRPC]
+        A["gRPC Client<br/>HTTP/2 + gRPC"]
     end
 
     subgraph "Edge Infrastructure"
-        B[Client-Side Proxy<br/>Envoy]
-        C[WAF<br/>NGINX]
-        D[Server-Side Proxy<br/>Envoy]
+        B["Client-Side Proxy<br/>Envoy"]
+        C["WAF<br/>NGINX"]
+        D["Server-Side Proxy<br/>Envoy"]
     end
 
     subgraph "Backend Services"
-        E[gRPC Server<br/>Go Service]
+        E["gRPC Server<br/>Go Service"]
     end
 
-    A -->|"1. gRPC Request<br/>HTTP/2"| B
-    B -->|"2. HTTP/1.1<br/>Bridge Conversion"| C
-    C -->|"3. HTTP/1.1<br/>WAF Processing"| D
-    D -->|"4. gRPC Request<br/>HTTP/2 Conversion"| E
-    E -->|"5. gRPC Response<br/>HTTP/2"| D
-    D -->|"6. HTTP/1.1<br/>Response"| C
-    C -->|"7. HTTP/1.1<br/>Response"| B
-    B -->|"8. gRPC Response<br/>HTTP/2"| A
+    A -->|"(1). gRPC Request<br/>HTTP/2"| B
+    B -->|"(2). HTTP/1.1<br/>Bridge Conversion"| C
+    C -->|"(3). HTTP/1.1<br/>WAF Processing"| D
+    D -->|"(4). gRPC Request<br/>HTTP/2 Conversion"| E
+    E -->|"(5). gRPC Response<br/>HTTP/2"| D
+    D -->|"(6). HTTP/1.1<br/>Response"| C
+    C -->|"(7). HTTP/1.1<br/>Response"| B
+    B -->|"(8). gRPC Response<br/>HTTP/2"| A
 
     style A fill:#e1f5fe
     style B fill:#f3e5f5
