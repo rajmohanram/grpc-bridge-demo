@@ -1,0 +1,23 @@
+services:
+  client-proxy:
+    hostname: client-proxy
+    container_name: client-proxy
+    image: envoyproxy/envoy:v1.33.9
+    restart: unless-stopped
+    volumes:
+      - ./config/envoy.yaml:/etc/envoy/envoy.yaml
+      - ./certs:/etc/envoy/certs
+    ports:
+      - "443:8443"
+    environment:
+      - ENVOY_UID=0
+      - ENVOY_GID=0
+    command: >
+      /usr/local/bin/envoy -c /etc/envoy/envoy.yaml -l info
+    networks:
+      - dockernet
+
+networks:
+  dockernet:
+    external: true
+    name: dockernet

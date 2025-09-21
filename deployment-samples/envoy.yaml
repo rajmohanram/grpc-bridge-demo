@@ -1,0 +1,41 @@
+admin:
+  access_log:
+  - name: envoy.access_loggers.file
+    typed_config:
+      "@type": type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+      path: /tmp/admin_access.log
+  address:
+    socket_address: { address: 0.0.0.0, port_value: 9901 }
+
+# Control logging levels
+layered_runtime:
+  layers:
+  - name: static_layer_0
+    static_layer:
+      envoy:
+        logging:
+          level: info  # Change from debug to info/warn/error
+
+# Overload manager for production-grade resource protection
+overload_manager:
+  refresh_interval: 0.25s
+  resource_monitors:
+  - name: "envoy.resource_monitors.global_downstream_max_connections"
+    typed_config:
+      "@type": type.googleapis.com/envoy.extensions.resource_monitors.downstream_connections.v3.DownstreamConnectionsConfig
+      max_active_downstream_connections: 5000
+  actions:
+  - name: "envoy.overload_actions.shrink_heap"
+    triggers:
+    - name: "envoy.resource_monitors.global_downstream_max_connections"
+      threshold:
+        value: 0.95
+  - name: "envoy.overload_actions.stop_accepting_requests"
+    triggers:
+    - name: "envoy.resource_monitors.global_downstream_max_connections"
+      threshold:
+        value: 0.98
+
+static_resources:
+  listeners: []
+  clusters: []
