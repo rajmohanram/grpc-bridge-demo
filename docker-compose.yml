@@ -1,31 +1,40 @@
 # version: '3.8'
 
 services:
-  user-grpc-server:
-    hostname: user-grpc-server
-    container_name: user-grpc-server
-    image: rajmor/user-grpc-server:0.1
-    restart: no
-    # ports:
-    #   - "50051:50051"
-    volumes:
-      - ./certs/grpc-service:/app/certs
+  user-grpc-client:
+    hostname: user-grpc-client
+    container_name: user-grpc-client
+    image: rajmor/user-grpc-client:0.1
+    depends_on:
+      - client-side-proxy
     networks:
       - dockernet
+    # Use stdin_open and tty for interactive console
+    stdin_open: true
+    tty: true
+    environment:
+      - SERVER_ADDRESS=client-side-proxy:8443
+      # - SERVER_ADDRESS=user-grpc-server:50051
+      - TLS_ENABLED=true
+      - TLS_SKIP_VERIFY=true
+      - TLS_SERVER_NAME=client-side-proxy
+    volumes:
+      - ./certs/grpc-client:/app/certs
+    restart: "no"
 
-  server-side-proxy:
-    hostname: server-side-proxy
-    container_name: server-side-proxy
+  client-side-proxy:
+    hostname: client-side-proxy
+    container_name: client-side-proxy
     image: envoyproxy/envoy:v1.33.4
     restart: no
     depends_on:
-      - user-grpc-server
+      - waf
     volumes:
-      - ./server-side-proxy/envoy.yaml:/etc/envoy/envoy.yaml
-      - ./certs/server-proxy:/etc/envoy/certs
+      - ./client-side-proxy/envoy.yaml:/etc/envoy/envoy.yaml
+      - ./certs/client-proxy:/etc/envoy/certs
     # ports:
     #   - "8443:8443"
-    #   - "9902:9901"
+    #   - "9901:9901"
     environment:
       - ENVOY_UID=0
       - ENVOY_GID=0
@@ -49,19 +58,19 @@ services:
     # ports:
     #   - "8443:443"
 
-  client-side-proxy:
-    hostname: client-side-proxy
-    container_name: client-side-proxy
+  server-side-proxy:
+    hostname: server-side-proxy
+    container_name: server-side-proxy
     image: envoyproxy/envoy:v1.33.4
     restart: no
     depends_on:
-      - waf
+      - user-grpc-server
     volumes:
-      - ./client-side-proxy/envoy.yaml:/etc/envoy/envoy.yaml
-      - ./certs/client-proxy:/etc/envoy/certs
+      - ./server-side-proxy/envoy.yaml:/etc/envoy/envoy.yaml
+      - ./certs/server-proxy:/etc/envoy/certs
     # ports:
     #   - "8443:8443"
-    #   - "9901:9901"
+    #   - "9902:9901"
     environment:
       - ENVOY_UID=0
       - ENVOY_GID=0
@@ -70,26 +79,17 @@ services:
     networks:
       - dockernet
 
-  user-grpc-client:
-    hostname: user-grpc-client
-    container_name: user-grpc-client
-    image: rajmor/user-grpc-client:0.1
-    depends_on:
-      - client-side-proxy
+  user-grpc-server:
+    hostname: user-grpc-server
+    container_name: user-grpc-server
+    image: rajmor/user-grpc-server:0.1
+    restart: no
+    # ports:
+    #   - "50051:50051"
+    volumes:
+      - ./certs/grpc-service:/app/certs
     networks:
       - dockernet
-    # Use stdin_open and tty for interactive console
-    stdin_open: true
-    tty: true
-    environment:
-      - SERVER_ADDRESS=client-side-proxy:8443
-      # - SERVER_ADDRESS=user-grpc-server:50051
-      - TLS_ENABLED=true
-      - TLS_SKIP_VERIFY=true
-      - TLS_SERVER_NAME=client-side-proxy
-    volumes:
-      - ./certs/grpc-client:/app/certs
-    restart: "no"
 
 networks:
   dockernet:
