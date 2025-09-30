@@ -53,7 +53,7 @@ static_resources:
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           stat_prefix: ingress_http
-          codec_type: HTTP2
+          codec_type: AUTO
           # Performance and buffer optimizations
           request_timeout: 300s
           request_headers_timeout: 10s
@@ -75,20 +75,12 @@ static_resources:
             allow_connect: true
             allow_metadata: true
           access_log:
-          # Downstream HTTP/2 gRPC requests
           - name: envoy.access_loggers.stdout
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
               log_format:
                 text_format_source:
-                  inline_string: "[DOWNSTREAM] [%START_TIME%] \"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%\" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% \"%REQ(X-FORWARDED-FOR)%\" \"%REQ(USER-AGENT)%\" \"%REQ(X-REQUEST-ID)%\" \"%REQ(:AUTHORITY)%\" \"%UPSTREAM_HOST%\"\n"
-          # Upstream HTTP/1.1 converted requests to WAF
-          - name: envoy.access_loggers.stdout
-            typed_config:
-              "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
-              log_format:
-                text_format_source:
-                  inline_string: "[UPSTREAM] [%START_TIME%] \"%UPSTREAM_REQ(:METHOD)% %UPSTREAM_REQ(:PATH)% HTTP/1.1\" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% \"%UPSTREAM_REQ(X-FORWARDED-FOR)%\" \"%UPSTREAM_REQ(USER-AGENT)%\" \"%UPSTREAM_REQ(X-REQUEST-ID)%\" \"%UPSTREAM_REQ(:AUTHORITY)%\" \"%UPSTREAM_HOST%\"\n"
+                  inline_string: "[%START_TIME%] \"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%\" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% \"%REQ(X-FORWARDED-FOR)%\" \"%REQ(USER-AGENT)%\" \"%REQ(X-REQUEST-ID)%\" \"%REQ(:AUTHORITY)%\" \"%UPSTREAM_HOST%\"\n"
           route_config:
             name: local_route
             virtual_hosts:
@@ -192,21 +184,21 @@ static_resources:
       max_ejection_percent: 50
       split_external_local_origin_errors: true
     # Optimized HTTP/1.1 configuration for upstream WAF
-    typed_extension_protocol_options:
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        explicit_http_config:
-          http_protocol_options:
-            allow_absolute_url: false
-            accept_http_10: false
-        # Enhanced HTTP/1.1 connection management
-        common_http_protocol_options:
-          idle_timeout: 60s
-          max_connection_duration: 300s
-          max_headers_count: 100
-          max_stream_duration: 300s
-          headers_with_underscores_action: ALLOW
-          max_requests_per_connection: 1000
+    # typed_extension_protocol_options:
+    #   envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+    #     "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+    #     explicit_http_config:
+    #       http_protocol_options:
+    #         allow_absolute_url: false
+    #         accept_http_10: false
+    #     # Enhanced HTTP/1.1 connection management
+    #     common_http_protocol_options:
+    #       idle_timeout: 60s
+    #       max_connection_duration: 300s
+    #       max_headers_count: 100
+    #       max_stream_duration: 300s
+    #       headers_with_underscores_action: ALLOW
+    #       max_requests_per_connection: 1000
     load_assignment:
       cluster_name: waf_service
       endpoints:
@@ -214,8 +206,8 @@ static_resources:
         - endpoint:
             address:
               socket_address:
-                address: waf
-                port_value: 443
+                address: nginx
+                port_value: 80
     transport_socket:
       name: envoy.transport_sockets.tls
       typed_config:

@@ -17,6 +17,16 @@ services:
     networks:
       - dockernet
 
+  nginx:
+    hostname: nginx
+    container_name: nginx
+    image: nginx:alpine
+    restart: unless-stopped
+    # ports:
+    #   - "80:80"
+    networks:
+      - dockernet
+
 networks:
   dockernet:
     external: true
